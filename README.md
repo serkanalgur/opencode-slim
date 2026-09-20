@@ -26,36 +26,21 @@ opencode plugin @serkanalgur/opencode-slim@latest --global
 
 ## Usage
 
+### Slash Commands
+
+Slim provides slash commands for easy access:
+
+- `/panel` — Opens the rich TUI panel with context usage, stats, and help
+- `/compress [focus]` — Manually trigger compression with focus description
+
 ### TUI Panel
 
-Use the `panel` command to view a rich visualization of your context usage:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    SLIM CONTEXT PANEL                       │
-├─────────────────────────────────────────────────────────────┤
-│ Status: 🟢 HEALTHY                                         │
-│                                                             │
-│ Context: [████████████░░░░░░░░░░░░░░░░░░] 35.2%            │
-│          70.4K / 200.0K tokens                              │
-│                                                             │
-│ Messages:                                                   │
-│   User: 12  Assistant: 15                                  │
-│   Tool calls: 8  Results: 23                               │
-│                                                             │
-│ Compression Stats:                                          │
-│   Count: 3                                                  │
-│   Avg ratio: 72.5%                                          │
-│   Tokens saved: 45.2K                                       │
-│                                                             │
-│ Cost Estimate:                                              │
-│   Current: $0.2112                                          │
-│   Saved: $0.1356                                            │
-│                                                             │
-│ Recommendations:                                            │
-│   • Context is healthy. No action needed.                   │
-└─────────────────────────────────────────────────────────────┘
-```
+The panel provides a real-time overview of your context usage, including:
+- Token usage vs model limit with visual progress bar
+- Message breakdown by role (user/assistant/tools)
+- Compression history and savings
+- Cost estimation based on your model
+- Smart recommendations for optimization
 
 ### Compress Tool
 
@@ -145,14 +130,17 @@ State is saved to disk, so compression history and learning persist across resta
 
 ## Commands
 
-- `panel` - Show rich context usage visualization
-- `compress` - Manually trigger compression with focus description
+| Command | Description |
+|---------|-------------|
+| `/panel` | Open the Slim TUI panel with context usage, stats, and help |
+| `/compress [focus]` | Manually trigger compression with focus description |
 
 ## Comparison with DCP
 
 | Feature | slim | DCP |
 |---------|------|-----|
 | TUI Panel | ✅ | ✅ |
+| Slash Commands | ✅ `/panel` `/compress` | ✅ `/dcp` `/dcp-compress` |
 | Manual Compress | ✅ | ✅ |
 | Semantic grouping | ✅ | ❌ |
 | Cost awareness | ✅ | ❌ |
