@@ -13,6 +13,7 @@ import {
 import { countTokens, shouldCompress, getMessageText, getToolResultContent } from "./lib/compress"
 import { pruneMessages } from "./lib/strategies"
 import { getSystemPrompt, getCompressToolDescription, getNudgeMessage } from "./lib/prompts"
+import { buildPanelData, renderPanel } from "./lib/tui"
 import type { SlimConfig, SessionState, MessageWithParts } from "./lib/types"
 
 // ─── State Management ───────────────────────────────────────────────────────
@@ -39,17 +40,21 @@ const server: Plugin = async (ctx) => {
     createDefaultConfig()
     const globalConfig = loadConfig()
 
-    // Expose compress tool
+    // ─── Compress Tool ─────────────────────────────────────────────────────
     const compressTool = tool({
         description: getCompressToolDescription(),
         args: {
-            focus: z.string().describe("Description of what content should be compressed"),
+            focus: z.string().describe("What to compress (e.g., 'old exploration', 'completed tasks')"),
+            mode: z.enum(["auto", "range", "topic"]).default("auto").describe("Compression mode"),
+            start: z.number().optional().describe("Start message index (for range mode)"),
+            end: z.number().optional().describe("End message index (for range mode)"),
+            topic: z.string().optional().describe("Topic to compress (for topic mode)"),
+            keepRecent: z.number().default(5).describe("Number of recent messages to always keep"),
         },
         async execute(args, context) {
             const config = getConfig(context.sessionID)
             const state = getState(context.sessionID, config)
 
-            // Get current messages from the client
             try {
                 const response = await ctx.client.session.messages({
                     path: { id: context.sessionID },
@@ -65,25 +70,53 @@ const server: Plugin = async (ctx) => {
                     parts: m.parts,
                 }))
 
-                // Count tokens before compression
+                // Determine what to compress
+                let targetIndices: number[] = []
                 let inputTokens = 0
-                for (const msg of messageWithParts) {
-                    const text = getMessageText(msg) + getToolResultContent(msg)
-                    inputTokens += await countTokens(text)
+
+                if (args.mode === "range" && args.start !== undefined && args.end !== undefined) {
+                    // Range mode: compress specific range
+                    const start = Math.max(0, args.start)
+                    const end = Math.min(messageWithParts.length, args.end)
+                    for (let i = start; i < end; i++) {
+                        targetIndices.push(i)
+                        const text = getMessageText(messageWithParts[i]) + getToolResultContent(messageWithParts[i])
+                        inputTokens += await countTokens(text)
+                    }
+                } else if (args.mode === "topic" && args.topic) {
+                    // Topic mode: compress messages matching topic
+                    const topicLower = args.topic.toLowerCase()
+                    for (let i = 0; i < messageWithParts.length - args.keepRecent; i++) {
+                        const msg = messageWithParts[i]
+                        const text = getMessageText(msg) + getToolResultContent(msg)
+                        if (text.toLowerCase().includes(topicLower)) {
+                            targetIndices.push(i)
+                            inputTokens += await countTokens(text)
+                        }
+                    }
+                } else {
+                    // Auto mode: smart selection
+                    const keepRecent = args.keepRecent
+                    for (let i = 0; i < messageWithParts.length - keepRecent; i++) {
+                        const msg = messageWithParts[i]
+                        const text = getMessageText(msg) + getToolResultContent(msg)
+                        const tokens = await countTokens(text)
+                        
+                        // Skip if too small to compress
+                        if (tokens < 100) continue
+                        
+                        targetIndices.push(i)
+                        inputTokens += tokens
+                    }
                 }
 
-                // Select what to compress based on focus
-                const targets = messageWithParts.length > 10
-                    ? [{ start: 0, end: messageWithParts.length - 5, reason: "user_requested" as const, estimatedTokens: inputTokens }]
-                    : []
-
-                if (targets.length === 0) {
+                if (targetIndices.length === 0) {
                     return "Nothing to compress - context is already efficient"
                 }
 
                 // Build summary
-                const compressedMessages = messageWithParts.slice(targets[0].start, targets[0].end)
-                const summary = buildCompressionSummary(compressedMessages, args.focus)
+                const targetMessages = targetIndices.map(i => messageWithParts[i])
+                const summary = buildCompressionSummary(targetMessages, args.focus)
 
                 // Count output tokens
                 const outputTokens = await countTokens(summary)
@@ -97,7 +130,7 @@ const server: Plugin = async (ctx) => {
                         inputTokens,
                         outputTokens,
                         ratio,
-                        messageCount: compressedMessages.length,
+                        messageCount: targetMessages.length,
                         success: true,
                     },
                     config.adaptive.learningRate,
@@ -106,12 +139,13 @@ const server: Plugin = async (ctx) => {
                 saveSessionState(state, config.persistence.directory)
 
                 return {
-                    title: `Compressed ${compressedMessages.length} messages`,
+                    title: `Compressed ${targetMessages.length} messages`,
                     output: summary,
                     metadata: {
                         inputTokens,
                         outputTokens,
                         ratio: Math.round(ratio * 100) + "%",
+                        mode: args.mode,
                         focus: args.focus,
                     },
                 }
@@ -121,18 +155,81 @@ const server: Plugin = async (ctx) => {
         },
     })
 
-    // Return hooks
+    // ─── TUI Panel Tool ────────────────────────────────────────────────────
+    const panelTool = tool({
+        description: `Display a rich context usage panel showing:
+- Current token usage vs model limit
+- Message breakdown (user/assistant/tools)
+- Token distribution by role
+- Compression history and savings
+- Cost estimate
+- Topic distribution
+- Smart recommendations`,
+        args: {},
+        async execute(_args, context) {
+            const config = getConfig(context.sessionID)
+            const state = getState(context.sessionID, config)
+
+            try {
+                const response = await ctx.client.session.messages({
+                    path: { id: context.sessionID },
+                })
+
+                if (!response.data || response.error) {
+                    return "Failed to fetch messages"
+                }
+
+                const messageList = response.data
+                const messageWithParts: MessageWithParts[] = messageList.map((m) => ({
+                    info: m.info,
+                    parts: m.parts,
+                }))
+
+                // Get model ID from context if available
+                const modelId = (context as any).model?.id || "unknown"
+
+                // Build panel data
+                const panelData = await buildPanelData(
+                    context.sessionID,
+                    messageWithParts,
+                    state,
+                    config,
+                    modelId,
+                )
+
+                // Render panel
+                const panel = renderPanel(panelData)
+
+                return {
+                    title: "Context Panel",
+                    output: panel,
+                    metadata: {
+                        usagePercent: panelData.usagePercent,
+                        status: panelData.status,
+                        currentTokens: panelData.currentTokens,
+                        maxTokens: panelData.maxTokens,
+                    },
+                }
+            } catch (error) {
+                return `Error generating panel: ${error instanceof Error ? error.message : "Unknown error"}`
+            }
+        },
+    })
+
+    // ─── Return Hooks ──────────────────────────────────────────────────────
     return {
         config: async (opencodeConfig) => {
-            // Add compress tool permission
+            // Add tool permissions
             if (!opencodeConfig.permission) {
                 opencodeConfig.permission = {} as any
             }
             ;(opencodeConfig.permission as any).compress = globalConfig.compress.permission
+            ;(opencodeConfig.permission as any).panel = "allow"
         },
 
         tool: {
             compress: compressTool,
+            panel: panelTool,
         },
 
         "experimental.chat.system.transform": async (input, output) => {
