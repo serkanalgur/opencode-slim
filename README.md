@@ -24,14 +24,26 @@ Smart context management plugin for OpenCode. Optimizes token usage through sema
 opencode plugin @serkanalgur/opencode-slim@latest --global
 ```
 
+This installs the plugin globally. The TUI features (panel, slash commands) are automatically loaded when OpenCode starts.
+
+### Manual Installation
+
+If the CLI command doesn't work, add to your `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "plugins": ["@serkanalgur/opencode-slim"]
+}
+```
+
 ## Usage
 
 ### Slash Commands
 
-Slim provides slash commands for easy access:
+After installation, these slash commands are available in the TUI:
 
 - `/panel` — Opens the rich TUI panel with context usage, stats, and help
-- `/compress [focus]` — Manually trigger compression with focus description
+- `/compress` — Shows instructions for using the compress tool
 
 ### TUI Panel
 
@@ -133,7 +145,9 @@ State is saved to disk, so compression history and learning persist across resta
 | Command | Description |
 |---------|-------------|
 | `/panel` | Open the Slim TUI panel with context usage, stats, and help |
-| `/compress [focus]` | Manually trigger compression with focus description |
+| `/compress` | Show instructions for using the compress tool |
+
+Note: Compression is performed by the AI assistant using the `compress` tool. The slash command provides guidance on usage.
 
 ## Comparison with DCP
 

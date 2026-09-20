@@ -1,6 +1,6 @@
 {
     "name": "@serkanalgur/opencode-slim",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "Smart context management plugin for OpenCode - semantic compression, cost-aware pruning, adaptive thresholds",
     "keywords": [
         "opencode",
