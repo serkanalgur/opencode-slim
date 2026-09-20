@@ -1,20 +1,75 @@
 # opencode-slim
 
+[![npm version](https://img.shields.io/npm/v/@serkanalgur/opencode-slim.svg)](https://www.npmjs.com/package/@serkanalgur/opencode-slim)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Smart context management plugin for OpenCode. Optimizes token usage through semantic compression, cost-aware pruning, and adaptive thresholds.
 
 ## Features
 
+- **TUI Panel** - Rich context usage visualization with status indicators
+- **Enhanced Compress** - Auto/range/topic modes for flexible compression
 - **Semantic Compression** - Groups related tool calls and compresses them intelligently
 - **Cost-Aware Pruning** - Considers token pricing when deciding what to compress
 - **Adaptive Thresholds** - Learns from compression history to optimize timing
 - **Session Persistence** - Saves state across restarts
 - **Deduplication** - Removes repeated tool calls automatically
 - **Error Purging** - Cleans up failed tool call outputs after configurable turns
+- **Topic Extraction** - Identifies and tracks conversation topics
+- **Smart Recommendations** - Provides actionable suggestions for context optimization
 
 ## Installation
 
 ```bash
 opencode plugin @serkanalgur/opencode-slim@latest --global
+```
+
+## Usage
+
+### TUI Panel
+
+Use the `panel` command to view a rich visualization of your context usage:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SLIM CONTEXT PANEL                       │
+├─────────────────────────────────────────────────────────────┤
+│ Status: 🟢 HEALTHY                                         │
+│                                                             │
+│ Context: [████████████░░░░░░░░░░░░░░░░░░] 35.2%            │
+│          70.4K / 200.0K tokens                              │
+│                                                             │
+│ Messages:                                                   │
+│   User: 12  Assistant: 15                                  │
+│   Tool calls: 8  Results: 23                               │
+│                                                             │
+│ Compression Stats:                                          │
+│   Count: 3                                                  │
+│   Avg ratio: 72.5%                                          │
+│   Tokens saved: 45.2K                                       │
+│                                                             │
+│ Cost Estimate:                                              │
+│   Current: $0.2112                                          │
+│   Saved: $0.1356                                            │
+│                                                             │
+│ Recommendations:                                            │
+│   • Context is healthy. No action needed.                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Compress Tool
+
+The enhanced compress tool supports multiple modes:
+
+```typescript
+// Auto mode (default) - intelligently selects what to compress
+compress({ focus: "old exploration" })
+
+// Range mode - compress specific message range
+compress({ focus: "completed tasks", mode: "range", start: 0, end: 50 })
+
+// Topic mode - compress messages matching a topic
+compress({ focus: "database work", mode: "topic", topic: "database" })
 ```
 
 ## Configuration
@@ -62,6 +117,16 @@ Create `~/.config/opencode/slim.jsonc`:
 
 ## How It Works
 
+### TUI Panel
+
+The panel provides a real-time overview of your context usage, including:
+- Token usage vs model limit with visual progress bar
+- Message breakdown by role (user/assistant/tools)
+- Compression history and savings
+- Cost estimation based on your model
+- Topic distribution across the conversation
+- Smart recommendations for optimization
+
 ### Semantic Compression
 
 Unlike simple text truncation, slim analyzes the semantic content of messages and groups related tool calls together. This preserves context while removing redundancy.
@@ -80,19 +145,21 @@ State is saved to disk, so compression history and learning persist across resta
 
 ## Commands
 
-- `/slim` - Show current context stats and compression history
-- `/slim compress` - Manually trigger compression
-- `/slim reset` - Reset adaptive learning
+- `panel` - Show rich context usage visualization
+- `compress` - Manually trigger compression with focus description
 
 ## Comparison with DCP
 
 | Feature | slim | DCP |
 |---------|------|-----|
+| TUI Panel | ✅ | ✅ |
+| Manual Compress | ✅ | ✅ |
 | Semantic grouping | ✅ | ❌ |
 | Cost awareness | ✅ | ❌ |
 | Adaptive thresholds | ✅ | ❌ |
 | Session persistence | ✅ | ❌ |
-| File count | ~8 | ~150 |
+| Topic extraction | ✅ | ❌ |
+| File count | ~10 | ~150 |
 | License | MIT | AGPL-3.0 |
 | Config complexity | Low | High |
 
