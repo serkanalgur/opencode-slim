@@ -51,6 +51,19 @@ The tool will preserve:
 Call this tool with a focus description indicating what content should be compressed.`
 }
 
+export function getPanelToolDescription(): string {
+    return `Display a rich context usage panel showing:
+- Current token usage vs model limit
+- Message breakdown (user/assistant/tools)
+- Token distribution by role
+- Compression history and savings
+- Cost estimate
+- Topic distribution
+- Smart recommendations
+
+Use this tool to get a visual overview of your context usage and health.`
+}
+
 export function getNudgeMessage(reason: string, tokenCount: number, maxTokens: number): string {
     const percentage = Math.round((tokenCount / maxTokens) * 100)
     
