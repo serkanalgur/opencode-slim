@@ -7,4 +7,8 @@ export default defineConfig({
     clean: true,
     sourcemap: true,
     noExternal: ["jsonc-parser"],
+    esbuildOptions(options) {
+        options.jsx = "automatic"
+        options.jsxImportSource = "@opentui/solid"
+    },
 })
