@@ -1,26 +1,7 @@
 {
-    "$schema": "https://json.schemastore.org/package.json",
     "name": "@serkanalgur/opencode-slim",
-    "version": "1.0.0",
-    "type": "module",
+    "version": "1.1.0",
     "description": "Smart context management plugin for OpenCode - semantic compression, cost-aware pruning, adaptive thresholds",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
-    "scripts": {
-        "clean": "rm -rf dist",
-        "build": "npm run clean && tsup && tsc --emitDeclarationOnly",
-        "dev": "tsup --watch",
-        "typecheck": "tsc --noEmit",
-        "test": "node --import tsx --test tests/*.test.ts",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
-    },
     "keywords": [
         "opencode",
         "opencode-plugin",
@@ -30,10 +11,42 @@
         "tokens",
         "semantic"
     ],
-    "author": "serkanalgur",
+    "homepage": "https://github.com/serkanalgur/opencode-slim#readme",
+    "bugs": {
+        "url": "https://github.com/serkanalgur/opencode-slim/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/serkanalgur/opencode-slim.git"
+    },
     "license": "MIT",
-    "peerDependencies": {
-        "@opencode-ai/plugin": ">=1.18.29"
+    "author": "serkanalgur",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "directories": {
+        "lib": "lib",
+        "test": "tests"
+    },
+    "files": [
+        "dist/",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "clean": "rm -rf dist",
+        "build": "npm run clean && tsup && tsc --emitDeclarationOnly",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit",
+        "test": "node --import tsx --test tests/*.test.ts",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
     },
     "dependencies": {
         "@anthropic-ai/tokenizer": "^0.0.4",
@@ -47,9 +60,8 @@
         "tsx": "^4.19.0",
         "typescript": "^5.7.0"
     },
-    "files": [
-        "dist/",
-        "README.md",
-        "LICENSE"
-    ]
+    "peerDependencies": {
+        "@opencode-ai/plugin": ">=1.18.29"
+    },
+    "$schema": "https://json.schemastore.org/package.json"
 }
